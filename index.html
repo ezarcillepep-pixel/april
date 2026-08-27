@@ -28,6 +28,7 @@ body {
 
 h1 {
   text-align: center;
+  margin-bottom: 5px;
 }
 
 .subtitle {
@@ -72,13 +73,29 @@ button {
   background: #111;
   color: white;
   font-size: 16px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#status {
+  text-align: center;
+  margin-top: 15px;
+}
+
+#result {
+  margin-top: 20px;
+}
+
+#result img {
+  width: 100%;
+  border-radius: 15px;
 }
 
 @media (max-width: 500px) {
-  .photos {
-    grid-template-columns: 1fr 1fr;
-  }
-
   .preview {
     height: 170px;
   }
@@ -93,47 +110,46 @@ button {
 <h1>AI Background Editor</h1>
 
 <p class="subtitle">
-Pilih foto utama dan foto background
+Pilih dua foto untuk mengganti background
 </p>
 
 <div class="photos">
 
 <div class="photo-box">
-
 <strong>📷 Foto Utama</strong>
 
 <input
-type="file"
-id="mainInput"
-accept="image/*"
+  type="file"
+  id="mainInput"
+  accept="image/*"
 >
 
 <img
-id="mainPreview"
-class="preview"
+  id="mainPreview"
+  class="preview"
+  alt="Foto utama"
 >
-
 </div>
 
 
 <div class="photo-box">
-
 <strong>🌄 Background</strong>
 
 <input
-type="file"
-id="bgInput"
-accept="image/*"
+  type="file"
+  id="bgInput"
+  accept="image/*"
 >
 
 <img
-id="bgPreview"
-class="preview"
+  id="bgPreview"
+  class="preview"
+  alt="Background"
 >
-
 </div>
 
 </div>
+
 
 <button id="generateBtn" disabled>
 ✨ Ganti Background
@@ -141,64 +157,66 @@ class="preview"
 
 <p id="status"></p>
 
+<div id="result"></div>
+
 </div>
 
 
 <script>
 
 const mainInput =
-document.getElementById("mainInput");
+  document.getElementById("mainInput");
 
 const bgInput =
-document.getElementById("bgInput");
+  document.getElementById("bgInput");
 
 const mainPreview =
-document.getElementById("mainPreview");
+  document.getElementById("mainPreview");
 
 const bgPreview =
-document.getElementById("bgPreview");
+  document.getElementById("bgPreview");
 
 const generateBtn =
-document.getElementById("generateBtn");
+  document.getElementById("generateBtn");
 
 const status =
-document.getElementById("status");
+  document.getElementById("status");
+
+const result =
+  document.getElementById("result");
 
 
-mainInput.addEventListener("change", function() {
+function preview(input, image) {
 
-  const file = mainInput.files[0];
+  const file = input.files[0];
 
   if (!file) return;
 
   const reader = new FileReader();
 
   reader.onload = function(e) {
-    mainPreview.src = e.target.result;
-    mainPreview.style.display = "block";
+
+    image.src = e.target.result;
+
+    image.style.display = "block";
+
     checkFiles();
   };
 
   reader.readAsDataURL(file);
+}
+
+
+mainInput.addEventListener("change", function() {
+
+  preview(mainInput, mainPreview);
 
 });
 
 
 bgInput.addEventListener("change", function() {
 
-  const file = bgInput.files[0];
-
-  if (!file) return;
-
-  const reader = new FileReader();
-
-  reader.onload = function(e) {
-    bgPreview.src = e.target.result;
-    bgPreview.style.display = "block";
-    checkFiles();
-  };
-
-  reader.readAsDataURL(file);
+  preview(bgInput, bgPreview);
 
 });
 
@@ -213,19 +231,129 @@ function checkFiles() {
     generateBtn.disabled = false;
 
     status.textContent =
-    "✓ Kedua foto sudah dipilih";
+      "✓ Kedua foto sudah siap";
+
+  } else {
+
+    generateBtn.disabled = true;
 
   }
-
 }
 
 
-generateBtn.addEventListener("click", function() {
+function fileToBase64(file) {
 
-  status.textContent =
-  "Foto siap diproses.";
+  return new Promise((resolve, reject) => {
 
-});
+    const reader = new FileReader();
+
+    reader.onload = function() {
+
+      const base64 =
+        reader.result.split(",")[1];
+
+      resolve(base64);
+
+    };
+
+    reader.onerror = reject;
+
+    reader.readAsDataURL(file);
+
+  });
+}
+
+
+generateBtn.addEventListener(
+  "click",
+  async function() {
+
+    generateBtn.disabled = true;
+
+    status.textContent =
+      "⏳ AI sedang memproses foto...";
+
+    result.innerHTML = "";
+
+    try {
+
+      const mainImage =
+        await fileToBase64(mainInput.files[0]);
+
+      const backgroundImage =
+        await fileToBase64(bgInput.files[0]);
+
+
+      const response = await fetch(
+        "https://april-backend-nine.vercel.app/api/generate",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json"
+          },
+
+          body: JSON.stringify({
+            mainImage: mainImage,
+            backgroundImage: backgroundImage
+          })
+        }
+      );
+
+
+      const data =
+        await response.json();
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          data.error ||
+          "Gagal menghubungi AI."
+        );
+
+      }
+
+
+      if (!data.image) {
+
+        throw new Error(
+          "AI tidak mengembalikan gambar."
+        );
+
+      }
+
+
+      const img =
+        document.createElement("img");
+
+      img.src =
+        "data:" +
+        data.image.mimeType +
+        ";base64," +
+        data.image.data;
+
+      result.appendChild(img);
+
+      status.textContent =
+        "✅ Selesai!";
+
+
+    } catch (error) {
+
+      console.error(error);
+
+      status.textContent =
+        "❌ " + error.message;
+
+    } finally {
+
+      generateBtn.disabled = false;
+
+    }
+
+  }
+);
 
 </script>
 
