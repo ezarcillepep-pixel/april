@@ -301,18 +301,28 @@ generateBtn.addEventListener(
       );
 
 
-      const data =
-        await response.json();
+      const text = await response.text();
 
+console.log("STATUS:", response.status);
+console.log("RESPONSE:", text);
 
-      if (!response.ok) {
+let data;
 
-        throw new Error(
-          data.error ||
-          "Gagal menghubungi AI."
-        );
+try {
+  data = JSON.parse(text);
+} catch {
+  throw new Error(
+    "Server mengirim respons: " + text
+  );
+}
 
-      }
+if (!response.ok) {
+  throw new Error(
+    data.error ||
+    data.message ||
+    JSON.stringify(data)
+  );
+}
 
 
       if (!data.image) {
