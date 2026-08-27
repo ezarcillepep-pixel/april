@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>AI Background Editor</title>
 
   <style>
@@ -12,103 +13,364 @@
 
     body {
       margin: 0;
+      min-height: 100vh;
       font-family: Arial, sans-serif;
-      background: #f5f5f5;
+      background: #f6f7fb;
+      color: #111;
       padding: 20px;
     }
 
-    .container {
-      max-width: 500px;
-      margin: auto;
-      background: white;
+    .app {
+      width: 100%;
+      max-width: 700px;
+      margin: 0 auto;
       padding: 25px;
-      border-radius: 20px;
+      background: #fff;
+      border-radius: 24px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
     }
 
-    h1 {
+    .header {
       text-align: center;
-      margin-bottom: 5px;
-    }
-
-    .subtitle {
-      text-align: center;
-      color: #777;
       margin-bottom: 25px;
     }
 
-    .upload-box {
-      border: 2px dashed #ccc;
-      border-radius: 15px;
-      padding: 25px;
-      text-align: center;
-      margin-bottom: 20px;
-      cursor: pointer;
+    .header h1 {
+      margin: 0;
+      font-size: 27px;
     }
 
-    .upload-box:hover {
+    .header p {
+      margin: 8px 0 0;
+      color: #777;
+      font-size: 14px;
+    }
+
+    .photos {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .photo-box {
+      position: relative;
+      height: 240px;
+      border: 2px dashed #d5d5d5;
+      border-radius: 18px;
+      overflow: hidden;
       background: #fafafa;
+      cursor: pointer;
+      transition: 0.2s;
     }
 
-    .upload-box input {
+    .photo-box:hover {
+      border-color: #999;
+      background: #f5f5f5;
+    }
+
+    .photo-box input {
       display: none;
+    }
+
+    .empty {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 15px;
+    }
+
+    .icon {
+      font-size: 40px;
+      margin-bottom: 10px;
+    }
+
+    .title {
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .desc {
+      font-size: 12px;
+      color: #888;
+      margin-top: 5px;
     }
 
     .preview {
       width: 100%;
-      max-height: 300px;
-      object-fit: contain;
-      border-radius: 12px;
-      margin-top: 15px;
+      height: 100%;
+      object-fit: cover;
       display: none;
     }
 
-    button {
+    .change {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      padding: 8px;
+      border: none;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.75);
+      color: white;
+      font-size: 12px;
+      display: none;
+    }
+
+    .generate {
       width: 100%;
+      margin-top: 20px;
       padding: 15px;
       border: none;
-      border-radius: 12px;
+      border-radius: 14px;
       background: #111;
       color: white;
       font-size: 16px;
+      font-weight: bold;
       cursor: pointer;
-      margin-top: 10px;
     }
 
-    button:disabled {
-      background: #aaa;
+    .generate:disabled {
+      background: #bbb;
+      cursor: not-allowed;
     }
 
-    #status {
+    .status {
       text-align: center;
-      margin-top: 15px;
-      color: #666;
+      margin-top: 12px;
+      font-size: 13px;
+      color: #777;
+      min-height: 18px;
+    }
+
+    @media (max-width: 520px) {
+      body {
+        padding: 12px;
+      }
+
+      .app {
+        padding: 18px;
+        border-radius: 20px;
+      }
+
+      .header h1 {
+        font-size: 23px;
+      }
+
+      .photos {
+        gap: 10px;
+      }
+
+      .photo-box {
+        height: 190px;
+        border-radius: 15px;
+      }
+
+      .icon {
+        font-size: 30px;
+      }
+
+      .title {
+        font-size: 13px;
+      }
+
+      .desc {
+        font-size: 10px;
+      }
     }
   </style>
 </head>
 
 <body>
 
-  <div class="container">
+  <main class="app">
 
-    <h1>AI Background Editor</h1>
+    <div class="header">
+      <h1>AI Background Editor</h1>
+      <p>Gabungkan foto utama dengan background pilihanmu</p>
+    </div>
 
-    <p class="subtitle">
-      Gabungkan foto utama dengan background pilihanmu
-    </p>
+    <div class="photos">
 
-    <!-- FOTO UTAMA -->
-    <label class="upload-box">
-      📷<br>
-      <strong>Pilih Foto Utama</strong>
-      <br>
-      <small>Foto orang atau objek</small>
+      <!-- FOTO UTAMA -->
+      <label class="photo-box">
 
-      <input type="file" id="mainImage" accept="image/*">
+        <input type="file" id="mainInput" accept="image/*">
 
-      <img id="mainPreview" class="preview">
-    </label>
+        <div class="empty" id="mainEmpty">
+          <div class="icon">📷</div>
+          <div class="title">Foto Utama</div>
+          <div class="desc">Tambahkan foto kamu</div>
+        </div>
 
-    <!-- FOTO BACKGROUND -->
-    <label class="upload-box">
-      🌄<br>
-      <strong>Pilih Foto
+        <img id="mainPreview" class="preview">
+
+        <button type="button" class="change" id="mainChange">
+          Ganti Foto
+        </button>
+
+      </label>
+
+
+      <!-- BACKGROUND -->
+      <label class="photo-box">
+
+        <input type="file" id="bgInput" accept="image/*">
+
+        <div class="empty" id="bgEmpty">
+          <div class="icon">🌄</div>
+          <div class="title">Background</div>
+          <div class="desc">Tambahkan foto background</div>
+        </div>
+
+        <img id="bgPreview" class="preview">
+
+        <button type="button" class="change" id="bgChange">
+          Ganti Foto
+        </button>
+
+      </label>
+
+    </div>
+
+
+    <button class="generate" id="generateBtn" disabled>
+      ✨ Ganti Background
+    </button>
+
+    <div class="status" id="status"></div>
+
+  </main>
+
+
+  <script>
+
+    const mainInput = document.getElementById("mainInput");
+    const bgInput = document.getElementById("bgInput");
+
+    const mainPreview = document.getElementById("mainPreview");
+    const bgPreview = document.getElementById("bgPreview");
+
+    const mainEmpty = document.getElementById("mainEmpty");
+    const bgEmpty = document.getElementById("bgEmpty");
+
+    const mainChange = document.getElementById("mainChange");
+    const bgChange = document.getElementById("bgChange");
+
+    const generateBtn = document.getElementById("generateBtn");
+    const status = document.getElementById("status");
+
+
+    function previewImage(input, preview, empty, changeButton) {
+
+      const file = input.files[0];
+
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = function(event) {
+
+        preview.src = event.target.result;
+
+        preview.style.display = "block";
+        empty.style.display = "none";
+        changeButton.style.display = "block";
+
+        checkFiles();
+      };
+
+      reader.readAsDataURL(file);
+    }
+
+
+    function checkFiles() {
+
+      if (
+        mainInput.files.length > 0 &&
+        bgInput.files.length > 0
+      ) {
+
+        generateBtn.disabled = false;
+
+        status.textContent =
+          "✓ Kedua foto sudah siap";
+
+      } else {
+
+        generateBtn.disabled = true;
+
+      }
+    }
+
+
+    mainInput.addEventListener("change", function() {
+
+      previewImage(
+        mainInput,
+        mainPreview,
+        mainEmpty,
+        mainChange
+      );
+
+    });
+
+
+    bgInput.addEventListener("change", function() {
+
+      previewImage(
+        bgInput,
+        bgPreview,
+        bgEmpty,
+        bgChange
+      );
+
+    });
+
+
+    mainChange.addEventListener("click", function(event) {
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      mainInput.click();
+
+    });
+
+
+    bgChange.addEventListener("click", function(event) {
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      bgInput.click();
+
+    });
+
+
+    generateBtn.addEventListener("click", function() {
+
+      status.textContent =
+        "⏳ Memproses foto...";
+
+      /*
+        Gemini API akan disambungkan
+        pada tahap berikutnya.
+      */
+
+      setTimeout(function() {
+
+        status.textContent =
+          "Fitur AI belum tersambung.";
+
+      }, 1000);
+
+    });
+
+  </script>
+
+</body>
+      </html>
